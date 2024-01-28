@@ -4,6 +4,8 @@ import re
 
 
 class UserSerializer(serializers.ModelSerializer):
+    # confirmation_code = serializers.IntegerField(write_only=True)
+
     class Meta:
         model = CustomUser
         fields = (

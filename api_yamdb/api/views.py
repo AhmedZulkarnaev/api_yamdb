@@ -1,24 +1,33 @@
-from rest_framework import viewsets, status, pagination, filters
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from reviews.models import CustomUser
 from .serializers import UserSerializer, TokenSerializer
 import random
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
-from .permissions import IsAdmin, IsModerator
+from .permissions import IsAdmin
 from .pagination import CustomPagination
 
 
 class UserRegisterViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+    permission_classes = (IsAdmin,)
 
     def generate_confirmation_code(self):
         return random.randint(100000, 999999)
 
     def create(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        username = request.data.get('username')
+        user = CustomUser.objects.filter(
+            email=email, username=username).first()
+        if user is not None:
+            return Response(
+                status=status.HTTP_200_OK
+            )
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -84,10 +93,9 @@ class TokenValidationViewSet(viewsets.ViewSet):
 class UserListViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdmin, IsAuthenticated)
+    permission_classes = (IsAdmin, IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
-    pagination_class = pagination.PageNumberPagination
     http_method_names = ['get', 'post', 'delete', 'patch']
     lookup_field = 'username'
     lookup_value_regex = r'[\w\@\.\+\-]+'
@@ -95,7 +103,7 @@ class UserListViewSet(viewsets.ModelViewSet):
     @action(
         methods=['GET'],
         detail=False,
-        pagination_class=pagination.PageNumberPagination,
+        pagination_class=CustomPagination,
         permission_classes=[IsAuthenticated],
         url_path='me'
     )
