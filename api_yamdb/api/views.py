@@ -11,7 +11,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import CustomUser
 from .permissions import IsAdminOrSuperUser, isAdmin
-from .pagination import CustomPagination
 from .serializers import TokenSerializer, UserSerializer
 
 
@@ -99,7 +98,7 @@ class UserListViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminOrSuperUser, IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
-    pagination_class = CustomPagination
+    # pagination_class = CustomPagination
     http_method_names = ['get', 'post', 'delete', 'patch']
     lookup_field = 'username'
     lookup_value_regex = r'[\w\@\.\+\-]+'
