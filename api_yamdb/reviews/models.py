@@ -1,6 +1,7 @@
 from django.db import models
-from django.core.validators import MaxLengthValidator
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxLengthValidator
+
 
 CHOICES = [('user', 'User'), ('moderator', 'Moderator'), ('admin', 'Admin')]
 
@@ -43,8 +44,7 @@ class CustomUser(AbstractUser):
         verbose_name='Биография',
         blank=True,
     )
-    is_verified = models.BooleanField(default=False)
-    confirmation_code = models.IntegerField(blank=True, null=True)
+    # is_verified = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = 'Пользователь'

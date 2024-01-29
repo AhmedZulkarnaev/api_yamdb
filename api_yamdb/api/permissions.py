@@ -1,17 +1,21 @@
-from rest_framework.permissions import BasePermission
+from rest_framework import permissions
 
 
-class IsAdmin(BasePermission):
+class isAdmin(permissions.BasePermission):
+    """
+    Разрешает доступ только администраторам.
+    """
     def has_permission(self, request, view):
         return (
-            not request.user.is_authenticated
-            or request.user.role == 'admin'
+            not request.user.is_authenticated or request.user.role == 'admin'
         )
 
 
-class isSuperUser(BasePermission):
+class IsAdminOrSuperUser(permissions.BasePermission):
+    """
+    Разрешает доступ только администраторам или суперпользователям.
+    """
     def has_permission(self, request, view):
-        return (request.user.is_authenticated
-                and (request.user.role == 'moderator'
-                     or request.user.is_staff
-                     or request.user.is_superuser))
+        return request.user.is_superuser or (
+            request.user.is_authenticated and request.user.role == 'admin'
+        )

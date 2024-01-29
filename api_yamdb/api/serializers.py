@@ -1,16 +1,16 @@
-from rest_framework import serializers
-from reviews.models import CustomUser
 import re
+from rest_framework import serializers
+
+from reviews.models import CustomUser
 
 
 class UserSerializer(serializers.ModelSerializer):
-    # confirmation_code = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = CustomUser
         fields = (
-            'id', 'username', 'first_name', 'last_name', 'email',
-            'role', 'bio', 'is_verified', 'confirmation_code'
+            'username', 'first_name', 'last_name', 'email',
+            'role', 'bio'
         )
         read_only_fields = ['confirmation_code', 'is_verified']
 

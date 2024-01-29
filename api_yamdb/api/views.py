@@ -1,23 +1,27 @@
-from rest_framework import viewsets, status, filters
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from reviews.models import CustomUser
-from .serializers import UserSerializer, TokenSerializer
 import random
+
+from django.core.cache import cache
 from django.core.mail import send_mail
-from rest_framework_simplejwt.tokens import RefreshToken
+
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
-from .permissions import IsAdmin
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from reviews.models import CustomUser
+from .permissions import IsAdminOrSuperUser, isAdmin
 from .pagination import CustomPagination
+from .serializers import TokenSerializer, UserSerializer
 
 
 class UserRegisterViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdmin,)
+    permission_classes = (isAdmin,)
 
     def generate_confirmation_code(self):
-        return random.randint(100000, 999999)
+        return str(random.randint(100000, 999999))
 
     def create(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -31,7 +35,10 @@ class UserRegisterViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            self.send_confirmation_code(user)
+            confirmation_code = self.generate_confirmation_code()
+            cache.set(
+                f'confirmation_code_{user.id}', confirmation_code, timeout=300)
+            self.send_confirmation_code(user.email, confirmation_code)
             return Response(
                 {
                     'email': user.email,
@@ -41,15 +48,12 @@ class UserRegisterViewSet(viewsets.ModelViewSet):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def send_confirmation_code(self, user):
-        confirmation_code = self.generate_confirmation_code()
-        user.confirmation_code = confirmation_code
-        user.save()
+    def send_confirmation_code(self, email, confirmation_code):
         send_mail(
             subject='Код подтверждения',
             message=f'Ваш код подтверждения: {confirmation_code}',
             from_email='noreply@example.com',
-            recipient_list=[user.email],
+            recipient_list=[email],
             fail_silently=False,
         )
 
@@ -76,13 +80,12 @@ class TokenValidationViewSet(viewsets.ViewSet):
                     {'error': 'Требуется код подтверждения'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            confirmation_code = int(confirmation_code)
-            if confirmation_code != user.confirmation_code:
+            stored_code = cache.get(f'confirmation_code_{user.id}')
+            if confirmation_code != stored_code:
                 return Response(
                     {'error': 'Неверный код подтверждения'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            user.is_verified = True
             user.save()
             refresh = RefreshToken.for_user(user)
             token = {'token': str(refresh.access_token)}
@@ -93,9 +96,10 @@ class TokenValidationViewSet(viewsets.ViewSet):
 class UserListViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdmin, IsAuthenticated,)
+    permission_classes = (IsAdminOrSuperUser, IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
+    pagination_class = CustomPagination
     http_method_names = ['get', 'post', 'delete', 'patch']
     lookup_field = 'username'
     lookup_value_regex = r'[\w\@\.\+\-]+'
@@ -103,7 +107,6 @@ class UserListViewSet(viewsets.ModelViewSet):
     @action(
         methods=['GET'],
         detail=False,
-        pagination_class=CustomPagination,
         permission_classes=[IsAuthenticated],
         url_path='me'
     )
