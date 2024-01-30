@@ -41,6 +41,7 @@ from .serializers import (
 
 
 class UserRegisterViewSet(viewsets.ModelViewSet):
+    '''Регистрация пользователя'''
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = (isAdmin,)
@@ -84,7 +85,7 @@ class UserRegisterViewSet(viewsets.ModelViewSet):
 
 
 class TokenValidationViewSet(viewsets.ViewSet):
-
+    '''Аутентификация пользователя'''
     def create(self, request, *args, **kwargs):
         serializer = TokenSerializer(data=request.data)
         if serializer.is_valid():
@@ -119,12 +120,12 @@ class TokenValidationViewSet(viewsets.ViewSet):
 
 
 class UserListViewSet(viewsets.ModelViewSet):
+    '''Профиль пользователя'''
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAdminOrSuperUser, IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
-    # pagination_class = CustomPagination
     http_method_names = ['get', 'post', 'delete', 'patch']
     lookup_field = 'username'
     lookup_value_regex = r'[\w\@\.\+\-]+'
@@ -162,6 +163,7 @@ class CreateListDestroyMixin(
 
 
 class CategoryViewSet(CreateListDestroyMixin):
+    """Представление для работы с моделью Category."""
     queryset = Category.objects.all().order_by('id')
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
@@ -172,6 +174,7 @@ class CategoryViewSet(CreateListDestroyMixin):
 
 
 class GenreViewSet(CreateListDestroyMixin):
+    '''Жанры'''
     queryset = Genre.objects.all().order_by('id')
     serializer_class = GenreSerializer
     permission_classes = (IsAdminOrReadOnly,)

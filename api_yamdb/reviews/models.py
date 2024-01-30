@@ -8,17 +8,17 @@ from .validators import year_validator
 
 CHOICES = [('user', 'User'), ('moderator', 'Moderator'), ('admin', 'Admin')]
 SCORE_CHOICES = (
-        (1, 'Полный провал'),
-        (2, 'Ужасно'),
-        (3, 'Плохо'),
-        (4, 'Ниже среднего'),
-        (5, 'На один раз'),
-        (6, 'Выше среднего'),
-        (7, 'Очень хорошо'),
-        (8, 'Отлично'),
-        (9, 'Потрясающе'),
-        (10, 'Восторг'),
-    )
+    (1, 'Полный провал'),
+    (2, 'Ужасно'),
+    (3, 'Плохо'),
+    (4, 'Ниже среднего'),
+    (5, 'На один раз'),
+    (6, 'Выше среднего'),
+    (7, 'Очень хорошо'),
+    (8, 'Отлично'),
+    (9, 'Потрясающе'),
+    (10, 'Восторг'),
+)
 
 
 class CustomUser(AbstractUser):
@@ -59,7 +59,6 @@ class CustomUser(AbstractUser):
         verbose_name='Биография',
         blank=True,
     )
-    # is_verified = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -191,10 +190,10 @@ class Review(models.Model):
         verbose_name = 'отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = [
-                models.UniqueConstraint(
-                    fields=['title', 'author'],
-                    name='unique_review_by_author'
-                ),]
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_review_by_author'
+            ),]
 
     def __str__(self):
         return f'Отзыв на "{self.title}" от {self.author.username}'
