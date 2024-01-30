@@ -193,7 +193,7 @@ class Review(models.Model):
             models.UniqueConstraint(
                 fields=['title', 'author'],
                 name='unique_review_by_author'
-            ),]
+            )]
 
     def __str__(self):
         return f'Отзыв на "{self.title}" от {self.author.username}'
