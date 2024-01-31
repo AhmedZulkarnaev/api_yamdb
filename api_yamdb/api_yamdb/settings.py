@@ -121,4 +121,4 @@ EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 
-AUTH_USER_MODEL = 'reviews.CustomUser'
+AUTH_USER_MODEL = 'reviews.User'

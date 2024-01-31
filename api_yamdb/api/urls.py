@@ -4,7 +4,7 @@ from rest_framework import routers
 from .views import (
     UserRegisterViewSet, TokenValidationViewSet, UserListViewSet,
 )
-API_VERSION = 'v1'
+API_VERSION_1 = 'v1'
 
 router = routers.DefaultRouter()
 router.register('auth/signup', UserRegisterViewSet, basename='register')
@@ -13,6 +13,6 @@ router.register('users', UserListViewSet, basename='users')
 
 urlpatterns = [
     path(
-        f'{API_VERSION}/', include(router.urls)
+        f'{API_VERSION_1}/', include(router.urls)
     )
 ]

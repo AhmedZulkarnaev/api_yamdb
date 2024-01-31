@@ -1,25 +1,19 @@
-import re
 from rest_framework import serializers
-
-from reviews.models import CustomUser
+from reviews.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
+    confirmation_code = serializers.CharField(write_only=True, required=False)
 
     class Meta:
-        model = CustomUser
+        model = User
         fields = (
             'username', 'first_name', 'last_name', 'email',
-            'role', 'bio'
+            'role', 'bio', 'confirmation_code'
         )
-        read_only_fields = ['confirmation_code', 'is_verified']
+        read_only_fields = ['is_verified']
 
     def validate_username(self, value):
-        if not re.match(r'^[\w.@+-]+\Z', value):
-            raise serializers.ValidationError(
-                'Имя пользователя может содержать только буквы, '
-                'цифры и символы: @/./+/-/_.'
-            )
         if value == 'me':
             raise serializers.ValidationError(
                 'Имя пользователя "me" не допускается.'
@@ -29,4 +23,4 @@ class UserSerializer(serializers.ModelSerializer):
 
 class TokenSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
-    confirmation_code = serializers.IntegerField()
+    confirmation_code = serializers.CharField()
