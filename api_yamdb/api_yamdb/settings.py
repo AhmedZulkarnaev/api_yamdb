@@ -120,3 +120,13 @@ EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 
 AUTH_USER_MODEL = 'reviews.CustomUser'
+
+PATH_CSV_FILES = {
+    'customuser': str(BASE_DIR.joinpath('static/data/users.csv')),
+    'category': str(BASE_DIR.joinpath('static/data/category.csv')),
+    'genre': str(BASE_DIR.joinpath('static/data/genre.csv')),
+    'title': str(BASE_DIR.joinpath('static/data/titles.csv')),
+    'genretitle': str(BASE_DIR.joinpath('static/data/genre_title.csv')),
+    'review': str(BASE_DIR.joinpath('static/data/review.csv')),
+    'comment': str(BASE_DIR.joinpath('static/data/comments.csv')),
+}
