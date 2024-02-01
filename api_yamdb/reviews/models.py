@@ -9,24 +9,13 @@ from .constants import (
     MAX_LENGTH_EMAIL, MAX_LENGTH_ROLE,
     MAX_LENGTH_TITLE_NAME, MAX_LENGTH_SLUG,
     MAX_LENGTH_TITLE_DESCRIPTION,
-    MAX_LENGTH_GENRE_CATEGORY_NAME
+    MAX_LENGTH_GENRE_CATEGORY_NAME,
+    SCORE_CHOICES
 )
 from .validators import year_validator, validate_username
 
 CHOICES = (
     (USER_ROLE, 'User'), (MODERATOR_ROLE, 'Moderator'), (ADMIN_ROLE, 'Admin')
-)
-SCORE_CHOICES = (
-    (1, 'Полный провал'),
-    (2, 'Ужасно'),
-    (3, 'Плохо'),
-    (4, 'Ниже среднего'),
-    (5, 'На один раз'),
-    (6, 'Выше среднего'),
-    (7, 'Очень хорошо'),
-    (8, 'Отлично'),
-    (9, 'Потрясающе'),
-    (10, 'Восторг'),
 )
 
 
@@ -76,6 +65,18 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+
+class ReviewCommentBaseModel(models.Model):
+    text = models.TextField('Текст')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    pub_date = models.DateTimeField(
+        'Дата добавления',
+        auto_now_add=True,
+        db_index=True)
+
+    class Meta:
+        abstract = True
 
 
 class GenreCategoryBaseModel(models.Model):
@@ -153,20 +154,15 @@ class Title(models.Model):
         return self.name
 
 
-class Review(models.Model):
-    title = models.ForeignKey(Title,
-                              on_delete=models.CASCADE,
-                              related_name='reviews')
-    text = models.TextField('Отзыв')
-    author = models.ForeignKey(User,
-                               on_delete=models.CASCADE,
-                               related_name='reviews')
-    score = models.IntegerField('Оценка',
-                                choices=SCORE_CHOICES,
-                                validators=[MinValueValidator(1),
-                                            MaxValueValidator(10)])
-    pub_date = models.DateTimeField('Дата добавления',
-                                    auto_now_add=True, db_index=True)
+class Review(ReviewCommentBaseModel):
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        related_name='reviews')
+    score = models.PositiveSmallIntegerField(
+        'Оценка',
+        choices=SCORE_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(10)])
 
     class Meta:
         verbose_name = 'отзыв'
@@ -181,17 +177,11 @@ class Review(models.Model):
         return f'Отзыв на "{self.title}" от {self.author.username}'
 
 
-class Comment(models.Model):
-    review = models.ForeignKey(Review,
-                               on_delete=models.CASCADE,
-                               related_name='comments')
-    text = models.TextField('Комментарий')
-    author = models.ForeignKey(User,
-                               on_delete=models.CASCADE,
-                               related_name='comments')
-    pub_date = models.DateTimeField('Дата добавления',
-                                    auto_now_add=True,
-                                    db_index=True)
+class Comment(ReviewCommentBaseModel):
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name='comments')
 
     class Meta:
         verbose_name = 'комментарий'

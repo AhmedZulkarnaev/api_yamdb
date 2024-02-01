@@ -2,7 +2,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers
 from django.contrib.auth.tokens import default_token_generator
 
 from reviews.models import Category, Genre, Title, User, Comment, Review
@@ -131,8 +130,12 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
 
     def validate(self, data):
+        title = get_object_or_404(
+            Title,
+            pk=self.context['view'].kwargs.get('title_id'))
         if self.context['request'].method == 'POST' and Review.objects.filter(
-                title=self.context['view'].kwargs.get('title_id'),
+                title=title,
                 author=self.context['request'].user).exists():
             raise ValidationError('Вы уже оставляли отзыв '
                                   'на это произведение!')
+        return data
