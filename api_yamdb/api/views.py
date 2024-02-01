@@ -5,9 +5,7 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import (
-    PageNumberPagination,
-    LimitOffsetPagination)
+from rest_framework.pagination import (LimitOffsetPagination)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -145,7 +143,6 @@ class CategoryViewSet(CreateListDestroyMixin):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
-    pagination_class = PageNumberPagination
 
 
 class GenreViewSet(CreateListDestroyMixin):
@@ -156,7 +153,6 @@ class GenreViewSet(CreateListDestroyMixin):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
-    pagination_class = PageNumberPagination
 
 
 class TitleViewSet(ModelViewSet):
@@ -166,7 +162,6 @@ class TitleViewSet(ModelViewSet):
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
-    pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete')
 
     def get_serializer_class(self):
