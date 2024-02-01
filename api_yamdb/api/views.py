@@ -9,32 +9,37 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import User
-from .permissions import IsAdminOrSuperUser, IsAdmin
+from .permissions import IsAdmin
 from .serializers import TokenSerializer, UserSerializer
 
 
 class UserRegisterViewSet(viewsets.ViewSet):
     permission_classes = (IsAdmin,)
+    serializer_class = UserSerializer
 
     def create(self, request):
         email = request.data.get('email')
         username = request.data.get('username')
         user = User.objects.filter(email=email, username=username).first()
+
         if user:
             confirmation_code = self.generate_confirmation_code(user)
             self.send_confirmation_code(user.email, confirmation_code)
             return Response(
-                {'message': 'Код подтверждения отправлен.'},
+                {'message': 'Confirmation code sent.'},
                 status=status.HTTP_200_OK
             )
-
-        serializer = UserSerializer(
-            data=request.data, context={'request': request})
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             user = serializer.save()
             confirmation_code = self.generate_confirmation_code(user)
             self.send_confirmation_code(user.email, confirmation_code)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+
+            return Response(
+                {'email': serializer.data['email'],
+                 'username': serializer.data['username']},
+                status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def generate_confirmation_code(self, user):
@@ -42,8 +47,8 @@ class UserRegisterViewSet(viewsets.ViewSet):
 
     def send_confirmation_code(self, email, confirmation_code):
         send_mail(
-            subject='Confirmation Code',
-            message=f'Your confirmation code: {confirmation_code}',
+            subject='Код подтверждения',
+            message=f'Ваш код подтверждения: {confirmation_code}',
             from_email='noreply@example.com',
             recipient_list=[email],
             fail_silently=False,
@@ -68,7 +73,7 @@ class TokenValidationViewSet(viewsets.ViewSet):
 class UserListViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdminOrSuperUser, IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdmin)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
 

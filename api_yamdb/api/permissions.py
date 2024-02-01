@@ -11,13 +11,3 @@ class IsAdmin(permissions.BasePermission):
             not request.user.is_authenticated
             or request.user.role == ADMIN_ROLE or request.user.is_staff
         )
-
-
-class IsAdminOrSuperUser(permissions.BasePermission):
-    """
-    Разрешает доступ только администраторам или суперпользователям.
-    """
-    def has_permission(self, request, view):
-        return request.user.is_superuser or (
-            request.user.is_authenticated and request.user.role == 'admin'
-        )
