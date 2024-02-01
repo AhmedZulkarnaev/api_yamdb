@@ -20,13 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ['is_verified']
 
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError(
-                'Имя пользователя "me" не допускается.'
-            )
-        return value
-
 
 class TokenSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
