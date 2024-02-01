@@ -1,19 +1,32 @@
-Проект YaMDb собирает отзывы пользователей на произведения.
-Этот сайт создан с использованием фреймворка DRF.
+# Проект YaMDb собирает отзывы пользователей на произведения. 
 
-Установка
-Сначала склонируйте репозиторий:
+Сами произведения в YaMDb не хранятся, здесь нельзя посмотреть фильм или послушать музыку.
 
-git clone git@github.com:AhmedZulkarnaev/api_yamdb.git
-cd ваш-репозиторий
-Создайте виртуальное окружение и установите зависимости:
+## Установка
 
-python -m venv venv
-source venv/bin/activate  # Для Linux/Mac
-pip install -r requirements.txt
+1. Сначала склонируйте репозиторий:
 
-Запуск:
-python manage.py runserver
+    ```bash
+    git clone git@github.com:AhmedZulkarnaev/api_yamdb.git
+    cd ваш-репозиторий
+    ```
 
-Замечание
+2. Создайте виртуальное окружение и установите зависимости:
+
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # Для Linux/Mac
+    pip install -r requirements.txt
+    ```
+
+## Использование
+
+1. Запуск:
+
+    ```bash
+    python manage.py runserver
+    ```
+
+## Замечание
+
 Убедитесь, что у вас есть актуальный токен пользователя.
