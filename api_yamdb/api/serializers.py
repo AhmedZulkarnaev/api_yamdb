@@ -1,12 +1,11 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-
-from reviews.models import Category, Genre, Title, User, Comment, Review
-
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from reviews.models import User
 from django.contrib.auth.tokens import default_token_generator
+
+from reviews.models import Category, Genre, Title, User, Comment, Review
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -79,19 +78,37 @@ class TitleEditSerializer(serializers.ModelSerializer):
         queryset=Category.objects.all(), slug_field='slug'
     )
     genre = serializers.SlugRelatedField(
-        queryset=Genre.objects.all(), slug_field='slug', many=True
+        queryset=Genre.objects.all(),
+        slug_field='slug',
+        many=True,
+        allow_null=False,
+        allow_empty=False
     )
 
     class Meta:
         fields = (
             'id',
             'name',
-            'description',
             'year',
-            'category',
-            'genre'
+            'description',
+            'genre',
+            'category'
         )
         model = Title
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        reviews = instance.reviews.all()
+        if reviews.exists():
+            representation['rating'] = int(
+                reviews.aggregate(Avg('score'))['score__avg']
+            )
+        else:
+            representation['rating'] = None
+        representation.move_to_end('description')
+        representation.move_to_end('genre')
+        representation.move_to_end('category')
+        return representation
 
 
 class CommentSerializer(serializers.ModelSerializer):

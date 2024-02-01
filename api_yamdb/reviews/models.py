@@ -7,6 +7,9 @@ from .constants import (
     USER_ROLE, MODERATOR_ROLE, ADMIN_ROLE,
     MAX_LENGTH_USERNAME, MAX_LENGTH_NAME,
     MAX_LENGTH_EMAIL, MAX_LENGTH_ROLE,
+    MAX_LENGTH_TITLE_NAME, MAX_LENGTH_SLUG,
+    MAX_LENGTH_TITLE_DESCRIPTION,
+    MAX_LENGTH_GENRE_CATEGORY_NAME
 )
 from .validators import year_validator, validate_username
 
@@ -75,20 +78,23 @@ class User(AbstractUser):
         return self.username
 
 
-class Genre(models.Model):
+class GenreCategoryBaseModel(models.Model):
     name = models.CharField(
-        verbose_name='Имя жанра',
         null=False,
         blank=False,
         unique=True,
-        max_length=256,
+        max_length=MAX_LENGTH_GENRE_CATEGORY_NAME,
     )
     slug = models.SlugField(
-        verbose_name='Слаг жанра',
         unique=True,
-        max_length=50,
+        max_length=MAX_LENGTH_SLUG,
     )
 
+    class Meta:
+        abstract = True
+
+
+class Genre(GenreCategoryBaseModel):
     class Meta:
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
@@ -97,20 +103,7 @@ class Genre(models.Model):
         return self.name
 
 
-class Category(models.Model):
-    name = models.CharField(
-        verbose_name='Имя категории',
-        null=False,
-        blank=False,
-        unique=True,
-        max_length=256,
-    )
-    slug = models.SlugField(
-        verbose_name='Слаг категории',
-        unique=True,
-        max_length=50,
-    )
-
+class Category(GenreCategoryBaseModel):
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
@@ -124,9 +117,9 @@ class Title(models.Model):
         verbose_name='Название произведения',
         null=False,
         blank=False,
-        max_length=256
+        max_length=MAX_LENGTH_TITLE_NAME
     )
-    year = models.PositiveSmallIntegerField(
+    year = models.SmallIntegerField(
         verbose_name='Год выхода',
         null=False,
         blank=False,
@@ -141,13 +134,13 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
-        through='GenreTitle',
+        related_name='genre',
         verbose_name='Жанр произведения',
         blank=True
     )
     description = models.CharField(
         verbose_name='Описание произведения',
-        max_length=256,
+        max_length=MAX_LENGTH_TITLE_DESCRIPTION,
         blank=True,
         null=True
     )
@@ -158,23 +151,6 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name
-
-
-class GenreTitle(models.Model):
-    genre = models.ForeignKey(
-        Genre,
-        on_delete=models.CASCADE,
-        verbose_name='Жанр',
-    )
-    title = models.ForeignKey(
-        Title,
-        on_delete=models.CASCADE,
-        verbose_name='Произведение',
-    )
-
-    class Meta:
-        verbose_name = 'Жанры произведений'
-        verbose_name_plural = 'Жанры произведений'
 
 
 class Review(models.Model):
