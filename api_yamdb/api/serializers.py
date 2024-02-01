@@ -1,27 +1,26 @@
-import re
-
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from reviews.models import Category, Genre, Title, CustomUser, Comment, Review
+from reviews.models import Category, Genre, Title, User, Comment, Review
+
+from django.shortcuts import get_object_or_404
+from rest_framework import serializers
+from reviews.models import User
+from django.contrib.auth.tokens import default_token_generator
 
 
 class UserSerializer(serializers.ModelSerializer):
+    confirmation_code = serializers.CharField(write_only=True, required=False)
 
     class Meta:
-        model = CustomUser
+        model = User
         fields = (
             'username', 'first_name', 'last_name', 'email',
-            'role', 'bio'
+            'role', 'bio', 'confirmation_code'
         )
-        read_only_fields = ['confirmation_code', 'is_verified']
+        read_only_fields = ['is_verified']
 
     def validate_username(self, value):
-        if not re.match(r'^[\w.@+-]+\Z', value):
-            raise serializers.ValidationError(
-                'Имя пользователя может содержать только буквы, '
-                'цифры и символы: @/./+/-/_.'
-            )
         if value == 'me':
             raise serializers.ValidationError(
                 'Имя пользователя "me" не допускается.'
@@ -31,7 +30,23 @@ class UserSerializer(serializers.ModelSerializer):
 
 class TokenSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
-    confirmation_code = serializers.IntegerField()
+    confirmation_code = serializers.CharField()
+
+    def validate(self, data):
+        username = data.get('username')
+        confirmation_code = data.get('confirmation_code')
+        user = get_object_or_404(User, username=username)
+        if not username:
+            raise serializers.ValidationError(
+                'Поле "username" обязательно для заполнения.',
+                code='invalid'
+            )
+
+        if not default_token_generator.check_token(user, confirmation_code):
+            raise serializers.ValidationError(
+                'Неверный код подтверждения.'
+            )
+        return data
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -111,4 +126,3 @@ class ReviewSerializer(serializers.ModelSerializer):
                 author=self.context['request'].user).exists():
             raise ValidationError('Вы уже оставляли отзыв '
                                   'на это произведение!')
-        return data

@@ -12,32 +12,32 @@ from .views import (
     TitleViewSet,
 )
 
-API_VERSION = 'v1'
+API_VERSION_1 = 'v1'
 
-router = routers.DefaultRouter()
-router.register('genres', GenreViewSet, basename='genres')
-router.register(
+router_v1 = routers.DefaultRouter()
+router_v1.register('genres', GenreViewSet, basename='genres')
+router_v1.register(
     'categories',
     CategoryViewSet,
     basename='categories'
 )
-router.register(
+router_v1.register(
     r'titles/(?P<title_id>\d+)/reviews',
     ReviewViewSet,
     basename='reviews'
 )
-router.register(
+router_v1.register(
     r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
     CommentViewSet,
     basename='comments'
 )
-router.register('titles', TitleViewSet, basename='titles')
-router.register('auth/signup', UserRegisterViewSet, basename='register')
-router.register('auth/token', TokenValidationViewSet, basename='auth')
-router.register('users', UserListViewSet, basename='users')
+router_v1.register('titles', TitleViewSet, basename='titles')
+router_v1.register('auth/signup', UserRegisterViewSet, basename='register')
+router_v1.register('auth/token', TokenValidationViewSet, basename='auth')
+router_v1.register('users', UserListViewSet, basename='users')
 
 urlpatterns = [
     path(
-        f'{API_VERSION}/', include(router.urls)
+        f'{API_VERSION_1}/', include(router_v1.urls)
     )
 ]

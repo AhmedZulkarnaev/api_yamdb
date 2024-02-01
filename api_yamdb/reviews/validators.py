@@ -10,3 +10,8 @@ def year_validator(value):
     timezone.activate(settings.TIME_ZONE)
     if value > timezone.now().year:
         raise ValidationError('Год выхода не должен быть больше нынешнего.')
+
+
+def validate_username(value):
+    if value == 'me':
+        raise ValidationError("Username 'me' is not allowed.")

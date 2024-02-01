@@ -1,8 +1,6 @@
-import random
-
 from django.db.models import Avg
-from django.core.cache import cache
 from django.core.mail import send_mail
+from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 
 from rest_framework import filters, status, viewsets
@@ -21,10 +19,9 @@ from rest_framework.mixins import (
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
-from reviews.models import Category, Genre, Title, CustomUser, Review
+from reviews.models import Category, Genre, Title, User, Review
 from .permissions import (
-    IsAdminOrSuperUser,
-    isAdmin,
+    IsAdmin,
     IsAdminOrReadOnly,
     IsAuthorModeratorAdminOrReadOnly)
 from .filters import TitleFilter
@@ -40,39 +37,37 @@ from .serializers import (
 )
 
 
-class UserRegisterViewSet(viewsets.ModelViewSet):
-    '''Регистрация пользователя'''
-    queryset = CustomUser.objects.all()
+class UserRegisterViewSet(viewsets.ViewSet):
+    permission_classes = (IsAdmin,)
     serializer_class = UserSerializer
-    permission_classes = (isAdmin,)
 
-    def generate_confirmation_code(self):
-        return str(random.randint(100000, 999999))
-
-    def create(self, request, *args, **kwargs):
+    def create(self, request):
         email = request.data.get('email')
         username = request.data.get('username')
-        user = CustomUser.objects.filter(
-            email=email, username=username).first()
-        if user is not None:
-            return Response(
-                status=status.HTTP_200_OK
-            )
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            confirmation_code = self.generate_confirmation_code()
-            cache.set(
-                f'confirmation_code_{user.id}', confirmation_code, timeout=300)
+        user = User.objects.filter(email=email, username=username).first()
+
+        if user:
+            confirmation_code = self.generate_confirmation_code(user)
             self.send_confirmation_code(user.email, confirmation_code)
             return Response(
-                {
-                    'email': user.email,
-                    'username': user.username,
-                },
+                {'message': 'Confirmation code sent.'},
+                status=status.HTTP_200_OK
+            )
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            user = serializer.save()
+            confirmation_code = self.generate_confirmation_code(user)
+            self.send_confirmation_code(user.email, confirmation_code)
+
+            return Response(
+                {'email': serializer.data['email'],
+                 'username': serializer.data['username']},
                 status=status.HTTP_200_OK
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def generate_confirmation_code(self, user):
+        return default_token_generator.make_token(user)
 
     def send_confirmation_code(self, email, confirmation_code):
         send_mail(
@@ -85,33 +80,13 @@ class UserRegisterViewSet(viewsets.ModelViewSet):
 
 
 class TokenValidationViewSet(viewsets.ViewSet):
-    '''Аутентификация пользователя'''
-    def create(self, request, *args, **kwargs):
+
+    def create(self, request):
         serializer = TokenSerializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                user = CustomUser.objects.get(
-                    username=serializer.validated_data['username']
-                )
-            except CustomUser.DoesNotExist:
-                return Response(
-                    {'error': 'Пользователь не найден'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            confirmation_code = serializer.validated_data.get(
-                'confirmation_code'
-            )
-            if not confirmation_code:
-                return Response(
-                    {'error': 'Требуется код подтверждения'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            stored_code = cache.get(f'confirmation_code_{user.id}')
-            if confirmation_code != stored_code:
-                return Response(
-                    {'error': 'Неверный код подтверждения'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        if serializer.is_valid(raise_exception=True):
+            user = get_object_or_404(
+                User, username=serializer.validated_data['username'])
+            user.is_verified = True
             user.save()
             refresh = RefreshToken.for_user(user)
             token = {'token': str(refresh.access_token)}
@@ -121,9 +96,9 @@ class TokenValidationViewSet(viewsets.ViewSet):
 
 class UserListViewSet(viewsets.ModelViewSet):
     '''Профиль пользователя'''
-    queryset = CustomUser.objects.all()
+    queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdminOrSuperUser, IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdmin)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
     http_method_names = ['get', 'post', 'delete', 'patch']
