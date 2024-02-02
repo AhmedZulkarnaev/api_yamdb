@@ -38,7 +38,7 @@ from .serializers import (
 
 
 class UserRegisterAPIView(views.APIView):
-    permission_classes = [IsAdmin,]
+    permission_classes = [IsAdmin]
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
