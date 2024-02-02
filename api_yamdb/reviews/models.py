@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import (RegexValidator,
-                                    MaxValueValidator,
+from django.core.validators import (MaxValueValidator,
                                     MinValueValidator)
+from django.contrib.auth.validators import UnicodeUsernameValidator
+
 from .constants import (
     USER_ROLE, MODERATOR_ROLE, ADMIN_ROLE,
     MAX_LENGTH_USERNAME, MAX_LENGTH_NAME,
@@ -12,7 +13,7 @@ from .constants import (
     MAX_LENGTH_GENRE_CATEGORY_NAME,
     SCORE_CHOICES
 )
-from .validators import year_validator, validate_username
+from .validators import year_validator
 
 CHOICES = (
     (USER_ROLE, 'User'), (MODERATOR_ROLE, 'Moderator'), (ADMIN_ROLE, 'Admin')
@@ -24,13 +25,7 @@ class User(AbstractUser):
         verbose_name='Логин',
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w@+.-]+$',
-                message="Допустимые символы: '_', '@', '+', '.', '-'"
-            ),
-            validate_username
-        ]
+        validators=[UnicodeUsernameValidator()]
     )
     first_name = models.CharField(
         verbose_name='Имя',
@@ -81,8 +76,6 @@ class ReviewCommentBaseModel(models.Model):
 
 class GenreCategoryBaseModel(models.Model):
     name = models.CharField(
-        null=False,
-        blank=False,
         unique=True,
         max_length=MAX_LENGTH_GENRE_CATEGORY_NAME,
     )

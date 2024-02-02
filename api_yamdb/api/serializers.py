@@ -2,36 +2,55 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.auth.tokens import default_token_generator
+from rest_framework.validators import UniqueValidator
 
+from reviews.models import User
+from reviews.constants import MAX_LENGTH_USERNAME, MAX_LENGTH_EMAIL
 from reviews.models import Category, Genre, Title, User, Comment, Review
 
 
 class UserSerializer(serializers.ModelSerializer):
-    confirmation_code = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
         fields = (
             'username', 'first_name', 'last_name', 'email',
-            'role', 'bio', 'confirmation_code'
+            'role', 'bio'
         )
-        read_only_fields = ['is_verified']
+
+
+class UserRegistrationSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        max_length=MAX_LENGTH_EMAIL, required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())])
+    username = serializers.CharField(
+        max_length=MAX_LENGTH_USERNAME, required=True,
+        validators=[
+            UnicodeUsernameValidator(), UniqueValidator(
+                queryset=User.objects.all()
+            )
+        ]
+    )
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError('Username "me" is not allowed.')
+        return value
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
 
 
 class TokenSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
+    username = serializers.CharField(max_length=MAX_LENGTH_USERNAME)
     confirmation_code = serializers.CharField()
 
     def validate(self, data):
         username = data.get('username')
         confirmation_code = data.get('confirmation_code')
         user = get_object_or_404(User, username=username)
-        if not username:
-            raise serializers.ValidationError(
-                'Поле "username" обязательно для заполнения.',
-                code='invalid'
-            )
 
         if not default_token_generator.check_token(user, confirmation_code):
             raise serializers.ValidationError(
@@ -130,11 +149,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
 
     def validate(self, data):
-        title = get_object_or_404(
-            Title,
-            pk=self.context['view'].kwargs.get('title_id'))
         if self.context['request'].method == 'POST' and Review.objects.filter(
-                title=title,
+                title=self.context['view'].kwargs.get('title_id'),
                 author=self.context['request'].user).exists():
             raise ValidationError('Вы уже оставляли отзыв '
                                   'на это произведение!')

@@ -3,12 +3,13 @@ from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, viewsets, views
 from rest_framework.decorators import action
 from rest_framework.pagination import (LimitOffsetPagination)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -32,26 +33,25 @@ from .serializers import (
     TitleEditSerializer,
     TokenSerializer,
     UserSerializer,
+    UserRegistrationSerializer
 )
 
 
-class UserRegisterViewSet(viewsets.ViewSet):
-    permission_classes = (IsAdmin,)
-    serializer_class = UserSerializer
+class UserRegisterAPIView(views.APIView):
+    permission_classes = [IsAdmin,]
 
-    def create(self, request):
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        # все перепробовал,как переотправлять токен
         email = request.data.get('email')
         username = request.data.get('username')
         user = User.objects.filter(email=email, username=username).first()
-
         if user:
             confirmation_code = self.generate_confirmation_code(user)
             self.send_confirmation_code(user.email, confirmation_code)
             return Response(
-                {'message': 'Confirmation code sent.'},
                 status=status.HTTP_200_OK
             )
-        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
             user = serializer.save()
             confirmation_code = self.generate_confirmation_code(user)
@@ -62,32 +62,29 @@ class UserRegisterViewSet(viewsets.ViewSet):
                  'username': serializer.data['username']},
                 status=status.HTTP_200_OK
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def generate_confirmation_code(self, user):
         return default_token_generator.make_token(user)
 
     def send_confirmation_code(self, email, confirmation_code):
         send_mail(
-            subject='Код подтверждения',
-            message=f'Ваш код подтверждения: {confirmation_code}',
+            subject='Confirmation Code',
+            message=f'Your confirmation code: {confirmation_code}',
             from_email='noreply@example.com',
             recipient_list=[email],
             fail_silently=False,
         )
 
 
-class TokenValidationViewSet(viewsets.ViewSet):
+class TokenValidationAPIView(views.APIView):
 
-    def create(self, request):
+    def post(self, request):
         serializer = TokenSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             user = get_object_or_404(
                 User, username=serializer.validated_data['username'])
-            user.is_verified = True
-            user.save()
-            refresh = RefreshToken.for_user(user)
-            token = {'token': str(refresh.access_token)}
+            access_token = AccessToken.for_user(user)
+            token = {'token': str(access_token)}
             return Response(token, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

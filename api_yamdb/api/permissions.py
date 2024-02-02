@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from reviews.constants import ADMIN_ROLE
+from reviews.constants import ADMIN_ROLE, MODERATOR_ROLE
 
 
 class IsAdmin(permissions.BasePermission):
@@ -21,7 +21,8 @@ class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return request.user.is_authenticated and request.user.role == 'admin'
+        return (request.user.is_authenticated
+                and request.user.role == ADMIN_ROLE)
 
 
 class IsAuthorModeratorAdminOrReadOnly(permissions.IsAuthenticatedOrReadOnly):
@@ -29,5 +30,5 @@ class IsAuthorModeratorAdminOrReadOnly(permissions.IsAuthenticatedOrReadOnly):
 
     def has_object_permission(self, request, view, obj):
         return (request.method in permissions.SAFE_METHODS
-                or request.user.role in ['moderator', 'admin']
+                or request.user.role in [MODERATOR_ROLE, ADMIN_ROLE]
                 or obj.author == request.user)
