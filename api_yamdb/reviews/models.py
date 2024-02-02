@@ -1,8 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator
+from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from .validator import validate_username
 from .constants import (
     USER_ROLE, MODERATOR_ROLE, ADMIN_ROLE,
     MAX_LENGTH_USERNAME, MAX_LENGTH_NAME,
@@ -19,13 +18,7 @@ class User(AbstractUser):
         verbose_name='Логин',
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^[\w@+.-]+$',
-                message="Допустимые символы: '_', '@', '+', '.', '-'"
-            ),
-            validate_username
-        ]
+        validators=[UnicodeUsernameValidator()]
     )
     first_name = models.CharField(
         verbose_name='Имя',

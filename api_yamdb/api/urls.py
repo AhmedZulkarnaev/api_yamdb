@@ -2,17 +2,25 @@ from django.urls import path, include
 from rest_framework import routers
 
 from .views import (
-    UserRegisterViewSet, TokenValidationViewSet, UserListViewSet,
+    UserRegisterAPIView, TokenValidationAPIView, UserListViewSet,
 )
 API_VERSION_1 = 'v1'
 
-router = routers.DefaultRouter()
-router.register('auth/signup', UserRegisterViewSet, basename='register')
-router.register('auth/token', TokenValidationViewSet, basename='auth')
-router.register('users', UserListViewSet, basename='users')
+router_v1 = routers.DefaultRouter()
+router_v1.register('users', UserListViewSet, basename='users')
 
 urlpatterns = [
     path(
-        f'{API_VERSION_1}/', include(router.urls)
-    )
+        f'{API_VERSION_1}/', include([
+            path(
+                'auth/signup/',
+                UserRegisterAPIView.as_view(), name='register'
+            ),
+            path(
+                'auth/token/',
+                TokenValidationAPIView.as_view(), name='auth'
+            ),
+        ])
+    ),
+    path(f'{API_VERSION_1}/', include(router_v1.urls)),
 ]
