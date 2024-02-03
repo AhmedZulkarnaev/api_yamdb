@@ -42,26 +42,16 @@ class UserRegisterAPIView(views.APIView):
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
-        # все перепробовал,как переотправлять токен
-        email = request.data.get('email')
-        username = request.data.get('username')
-        user = User.objects.filter(email=email, username=username).first()
-        if user:
-            confirmation_code = self.generate_confirmation_code(user)
-            self.send_confirmation_code(user.email, confirmation_code)
-            return Response(
-                status=status.HTTP_200_OK
-            )
-        if serializer.is_valid(raise_exception=True):
-            user = serializer.save()
-            confirmation_code = self.generate_confirmation_code(user)
-            self.send_confirmation_code(user.email, confirmation_code)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        confirmation_code = self.generate_confirmation_code(user)
+        self.send_confirmation_code(user.email, confirmation_code)
 
-            return Response(
-                {'email': serializer.data['email'],
-                 'username': serializer.data['username']},
-                status=status.HTTP_200_OK
-            )
+        return Response(
+            {'email': serializer.data['email'],
+             'username': serializer.data['username']},
+            status=status.HTTP_200_OK
+        )
 
     def generate_confirmation_code(self, user):
         return default_token_generator.make_token(user)
@@ -80,13 +70,12 @@ class TokenValidationAPIView(views.APIView):
 
     def post(self, request):
         serializer = TokenSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            user = get_object_or_404(
-                User, username=serializer.validated_data['username'])
-            access_token = AccessToken.for_user(user)
-            token = {'token': str(access_token)}
-            return Response(token, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        user = get_object_or_404(
+            User, username=serializer.validated_data['username'])
+        access_token = AccessToken.for_user(user)
+        token = {'token': str(access_token)}
+        return Response(token, status=status.HTTP_200_OK)
 
 
 class UserListViewSet(viewsets.ModelViewSet):

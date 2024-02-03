@@ -4,11 +4,12 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.auth.tokens import default_token_generator
-from rest_framework.validators import UniqueValidator
+from django.db import IntegrityError
 
 from reviews.models import User
 from reviews.constants import MAX_LENGTH_USERNAME, MAX_LENGTH_EMAIL
 from reviews.models import Category, Genre, Title, User, Comment, Review
+from reviews.validators import validate_username
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -23,24 +24,23 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(
-        max_length=MAX_LENGTH_EMAIL, required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())])
+        max_length=MAX_LENGTH_EMAIL, required=True,)
     username = serializers.CharField(
         max_length=MAX_LENGTH_USERNAME, required=True,
         validators=[
-            UnicodeUsernameValidator(), UniqueValidator(
-                queryset=User.objects.all()
-            )
+            UnicodeUsernameValidator(), validate_username
+
         ]
     )
 
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError('Username "me" is not allowed.')
-        return value
-
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        try:
+            user, created = User.objects.get_or_create(**validated_data)
+            return user
+        except IntegrityError:
+            raise serializers.ValidationError(
+                "Неуникальный username или email."
+            )
 
 
 class TokenSerializer(serializers.Serializer):

@@ -13,7 +13,7 @@ from .constants import (
     MAX_LENGTH_GENRE_CATEGORY_NAME,
     SCORE_CHOICES
 )
-from .validators import year_validator
+from .validators import year_validator, validate_username
 
 CHOICES = (
     (USER_ROLE, 'User'), (MODERATOR_ROLE, 'Moderator'), (ADMIN_ROLE, 'Admin')
@@ -25,7 +25,10 @@ class User(AbstractUser):
         verbose_name='Логин',
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
-        validators=[UnicodeUsernameValidator()]
+        validators=[
+            UnicodeUsernameValidator(),
+            validate_username
+        ]
     )
     first_name = models.CharField(
         verbose_name='Имя',
@@ -109,14 +112,10 @@ class Category(GenreCategoryBaseModel):
 class Title(models.Model):
     name = models.CharField(
         verbose_name='Название произведения',
-        null=False,
-        blank=False,
         max_length=MAX_LENGTH_TITLE_NAME
     )
     year = models.SmallIntegerField(
         verbose_name='Год выхода',
-        null=False,
-        blank=False,
         validators=[year_validator]
     )
     category = models.ForeignKey(
